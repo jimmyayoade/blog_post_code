@@ -1,0 +1,90 @@
+# 02-anti-affinity.yaml
+#
+# Companion manifest for "RWO Doesn't Mean 'One Pod.' It Means 'One Node.'"
+#
+# Requires a cluster with 2+ schedulable nodes (on a single-node cluster like
+# a default kind/minikube setup, the second pod will just stay Pending since
+# there's nowhere else to schedule it).
+#
+# Same RWO PVC, but this time we force the two pods onto different nodes
+# with podAntiAffinity. The first pod grabs the volume on its node; the
+# second pod can schedule but can never mount, because the volume is
+# already attached elsewhere. Watch it hang in ContainerCreating.
+#
+# Usage:
+#   kubectl apply -f 02-anti-affinity.yaml
+#   kubectl get pods -o wide -w
+#   kubectl describe pod rwo-pod-forced-2
+#   kubectl delete -f 02-anti-affinity.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rwo-forced-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwo-pod-forced-1
+  labels:
+    app: rwo-forced-demo
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - rwo-forced-demo
+          topologyKey: kubernetes.io/hostname
+  containers:
+    - name: app
+      image: busybox
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - mountPath: /data
+          name: shared-vol
+  volumes:
+    - name: shared-vol
+      persistentVolumeClaim:
+        claimName: rwo-forced-pvc
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwo-pod-forced-2
+  labels:
+    app: rwo-forced-demo
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - rwo-forced-demo
+          topologyKey: kubernetes.io/hostname
+  containers:
+    - name: app
+      image: busybox
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - mountPath: /data
+          name: shared-vol
+  volumes:
+    - name: shared-vol
+      persistentVolumeClaim:
+        claimName: rwo-forced-pvc

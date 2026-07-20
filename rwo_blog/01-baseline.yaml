@@ -1,0 +1,60 @@
+# 01-baseline.yaml
+#
+# Companion manifest for "RWO Doesn't Mean 'One Pod.' It Means 'One Node.'"
+#
+# A plain RWO PVC and two pods with no placement rules. If your scheduler
+# puts them on the same node (common in small/test clusters), both mount
+# fine. This is the behavior that surprises people.
+#
+# Usage:
+#   kubectl apply -f 01-baseline.yaml
+#   kubectl get pods -o wide
+#   kubectl delete -f 01-baseline.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rwo-test-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwo-pod-1
+spec:
+  containers:
+    - name: app
+      image: busybox
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - mountPath: /data
+          name: shared-vol
+  volumes:
+    - name: shared-vol
+      persistentVolumeClaim:
+        claimName: rwo-test-pvc
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwo-pod-2
+spec:
+  containers:
+    - name: app
+      image: busybox
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - mountPath: /data
+          name: shared-vol
+  volumes:
+    - name: shared-vol
+      persistentVolumeClaim:
+        claimName: rwo-test-pvc

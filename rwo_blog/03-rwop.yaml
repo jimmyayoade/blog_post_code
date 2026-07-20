@@ -1,0 +1,60 @@
+# 03-rwop.yaml
+#
+# Companion manifest for "RWO Doesn't Mean 'One Pod.' It Means 'One Node.'"
+#
+# Same experiment as 01-baseline.yaml (no placement rules, likely same node),
+# but with ReadWriteOncePod instead of ReadWriteOnce. This time the second
+# pod won't schedule/mount at all, even on the same node as the first.
+#
+# Usage:
+#   kubectl apply -f 03-rwop.yaml
+#   kubectl get pods -o wide -w
+#   kubectl delete -f 03-rwop.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rwop-test-pvc
+spec:
+  accessModes:
+    - ReadWriteOncePod
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwop-pod-1
+spec:
+  containers:
+    - name: app
+      image: busybox
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - mountPath: /data
+          name: shared-vol
+  volumes:
+    - name: shared-vol
+      persistentVolumeClaim:
+        claimName: rwop-test-pvc
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwop-pod-2
+spec:
+  containers:
+    - name: app
+      image: busybox
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - mountPath: /data
+          name: shared-vol
+  volumes:
+    - name: shared-vol
+      persistentVolumeClaim:
+        claimName: rwop-test-pvc
