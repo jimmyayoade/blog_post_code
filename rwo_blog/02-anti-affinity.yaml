@@ -18,6 +18,21 @@
 #   kubectl delete -f 02-anti-affinity.yaml
 
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rwo-forced-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: manual
+  hostPath:
+    path: /mnt/data/rwo-forced
+
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rwo-forced-pvc
@@ -27,7 +42,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: standard
 
 ---
 apiVersion: v1
