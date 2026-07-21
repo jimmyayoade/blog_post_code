@@ -12,6 +12,20 @@
 #   kubectl delete -f 03-rwop.yaml
 
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rwo-test-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  hostPath:
+    path: /mnt/data/rwo-test
+
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rwop-test-pvc
@@ -21,7 +35,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: standard
 
 ---
 apiVersion: v1
